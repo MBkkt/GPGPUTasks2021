@@ -432,9 +432,7 @@ const VersionedBinary* ProgramBinaries::getBinary(const std::shared_ptr<OpenCLEn
 
 		return binary;
 	}
-
-	throw ocl_exception("No SPIR version for " + to_string(cl->deviceAddressBits()) + "-bit device with OpenCL "
-						+ to_string(cl->deviceInfo().opencl_major_version) + "." + to_string(cl->deviceInfo().opencl_minor_version) + "!");
+	return binaries_.data(); // Fix for OpenCL 1.1
 }
 
 KernelSource::KernelSource(std::shared_ptr<ocl::ProgramBinaries> program, const char *name) : program_(program)
