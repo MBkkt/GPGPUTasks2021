@@ -1,35 +1,35 @@
-#include <libutils/misc.h>
-#include <libutils/timer.h>
-#include <libutils/fast_random.h>
 #include <libgpu/context.h>
 #include <libgpu/shared_device_buffer.h>
+#include <libutils/fast_random.h>
+#include <libutils/misc.h>
+#include <libutils/timer.h>
 
 #include "cl/matrix_multiplication_cl.h"
 
-#include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     gpu::Device device = gpu::chooseGPUDevice(argc, argv);
 
     gpu::Context context;
     context.init(device.device_id_opencl);
     context.activate();
 
-    int benchmarkingIters = 10; // TODO пока тестируетесь удобно выставить единицу
+    int benchmarkingIters = 10;// TODO пока тестируетесь удобно выставить единицу
     unsigned int M = 1024;
     unsigned int K = 1024;
     unsigned int N = 1024;
-    const size_t gflops = ((size_t) M * K * N * 2) / (1000 * 1000 * 1000); // умножить на два, т.к. операция сложения и умножения
+    const size_t gflops =
+            ((size_t) M * K * N * 2) / (1000 * 1000 * 1000);// умножить на два, т.к. операция сложения и умножения
 
-    std::vector<float> as(M*K, 0);
-    std::vector<float> bs(K*N, 0);
-    std::vector<float> cs(M*N, 0);
+    std::vector<float> as(M * K, 0);
+    std::vector<float> bs(K * N, 0);
+    std::vector<float> cs(M * N, 0);
 
-    FastRandom r(M+K+N);
+    FastRandom r(M + K + N);
     for (unsigned int i = 0; i < as.size(); ++i) {
         as[i] = r.nextf();
     }
