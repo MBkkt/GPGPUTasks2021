@@ -9,8 +9,11 @@
 #include "cl/mandelbrot_cl.h"
 
 
-void mandelbrotCPU(float *results, unsigned int width, unsigned int height, float fromX, float fromY, float sizeX,
-                   float sizeY, unsigned int iters, bool smoothing) {
+void mandelbrotCPU(float *results,                         //
+                   unsigned int width, unsigned int height,//
+                   float fromX, float fromY,               //
+                   float sizeX, float sizeY,               //
+                   unsigned int iters, bool smoothing) {
     const float threshold = 256.0f;
     const float threshold2 = threshold * threshold;
 
@@ -75,8 +78,11 @@ int main(int argc, char **argv) {
     {
         timer t;
         for (int i = 0; i < benchmarkingIters; ++i) {
-            mandelbrotCPU(cpu_results.ptr(), width, height, centralX - sizeX / 2.0f, centralY - sizeY / 2.0f, sizeX,
-                          sizeY, iterationsLimit, false);
+            mandelbrotCPU(cpu_results.ptr(),                               //
+                          width, height,                                   //
+                          centralX - sizeX / 2.0f, centralY - sizeY / 2.0f,//
+                          sizeX, sizeY,                                    //
+                          iterationsLimit, false);
             t.nextLap();
         }
         size_t flopsInLoop = 10;
@@ -166,11 +172,18 @@ void renderInWindow(float centralX, float centralY, unsigned int iterationsLimit
 
     do {
         if (!useGPU) {
-            mandelbrotCPU(results.ptr(), width, height, centralX - sizeX / 2.0f, centralY - sizeY / 2.0f, sizeX, sizeY,
+            mandelbrotCPU(results.ptr(),                                   //
+                          width, height,                                   //
+                          centralX - sizeX / 2.0f, centralY - sizeY / 2.0f,//
+                          sizeX, sizeY,                                    //
                           iterationsLimit, true);
         } else {
-            kernel.exec(gpu::WorkSize(16, 16, width, height), results_vram, width, height, centralX - sizeX / 2.0f,
-                        centralY - sizeY / 2.0f, sizeX, sizeY, iterationsLimit, 1);
+            kernel.exec(gpu::WorkSize(16, 16, width, height),            //
+                        results_vram,                                    //
+                        width, height,                                   //
+                        centralX - sizeX / 2.0f, centralY - sizeY / 2.0f,//
+                        sizeX, sizeY,                                    //
+                        iterationsLimit, 1);
             results_vram.readN(results.ptr(), width * height);
         }
         renderToColor(results.ptr(), image.ptr(), width, height);
