@@ -60,14 +60,15 @@ int main(int argc, char **argv) {
 
     /*
     gpu::gpu_mem_32f as_gpu, bs_gpu, cs_gpu;
-    as_gpu.resizeN(M*K);
-    bs_gpu.resizeN(K*N);
-    cs_gpu.resizeN(M*N);
+    as_gpu.resizeN(M * K);
+    bs_gpu.resizeN(K * N);
+    cs_gpu.resizeN(M * N);
 
-    as_gpu.writeN(as.data(), M*K);
-    bs_gpu.writeN(bs.data(), K*N);
+    as_gpu.writeN(as.data(), M * K);
+    bs_gpu.writeN(bs.data(), K * N);
 
-    ocl::Kernel matrix_multiplication_kernel(matrix_multiplication, matrix_multiplication_length, "matrix_multiplication");
+    ocl::Kernel matrix_multiplication_kernel(matrix_multiplication, matrix_multiplication_length,
+                                             "matrix_multiplication");
     matrix_multiplication_kernel.compile();
 
     {
@@ -76,7 +77,9 @@ int main(int argc, char **argv) {
             // TODO
             unsigned int work_group_size = 128;
             unsigned int global_work_size = ...;
-            matrix_multiplication_kernel.exec(gpu::WorkSize(work_group_size, global_work_size), as_gpu, bs_gpu, cs_gpu, M, K, N);
+            matrix_multiplication_kernel.exec(gpu::WorkSize(work_group_size, global_work_size),//
+                                              as_gpu, bs_gpu, cs_gpu,                          //
+                                              M, K, N);
 
             t.nextLap();
         }
@@ -84,7 +87,7 @@ int main(int argc, char **argv) {
         std::cout << "GPU: " << gflops / t.lapAvg() << " GFlops" << std::endl;
     }
 
-    cs_gpu.readN(cs.data(), M*N);
+    cs_gpu.readN(cs.data(), M * N);
     */
 
     // Проверяем корректность результатов
