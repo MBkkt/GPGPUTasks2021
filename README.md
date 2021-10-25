@@ -42,22 +42,80 @@
 
 Дополните набросок кода ниже так, чтобы не было гонок (желательно добавить поясняющие комментарии почему вам кажется что это работает):
 
+Собственно предлагаемое решение простое и упорядочивает все доступы к dsu, но не позволяет делать чтения в одной группе
+параллельно, зато точно должно работать. Из хорошего то что мы поступаем относительно честно.
+
 ```C++
-__kernel do_some_work()
-{
-    // assert(get_group_size() == [256, 1, 1]);
+struct mutex {
+    uint owner_ticket;
+    uint next_free_ticket;
+};
 
+void init(mutex* m) {
+    m->owner_ticket = 0;
+    m->next_free_ticket = 0;
+}
+
+__kernel do_some_work() {
+    assert(get_group_id == [256, 1, 1]);
+    __local mutex m;
+    if (get_local_id(0) == 0) {
+        init(&m);
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
     __local disjoint_set = ...;
-
-    for (int iters = 0; iters < 100; ++iters) { // потоки делают сто итераций
-        if (some_random_predicat(...)) { // предикат этого потока, он срабатывает очень редко (например шанс - 0.1%)
-            ...                          // т.е. на каждой итерации некоторые потоки (может быть ноль, один, два или вообще все)
-            union(disjoint_set, ...);    // могут захотеть обновить нашу структурку
-            ...
+    for (int iters = 0; iters < 100; ++iters) {  // потоки делают сто итераций
+        const uint this_thread_ticket = atomic_add(&(m.next_free_ticket), 1);
+        while (true) {
+            if (this_thread_ticket == atomic_load(&(m.owner_ticket))) {
+                if (some_random_predicat(get_local_id(0))) {  // предикат срабатывает очень редко (например шанс - 0.1%)
+                    union(disjoint_set, ...);  // на каждой итерации некоторые потоки могут захотеть обновить нашу структурку
+                }
+                tmp = get(disjoint_set, ...);  // потоки постоянно хотят читать из структурки
+                atomic_add(&owner_ticket, 1);
+                break;
+            }
         }
-        ...
-        tmp = get(disjoint_set, ...); // потоки постоянно хотят читать из структурки
-        ...
+    }
+}
+```
+
+Как вариант можно попробовать нечто такое, но, по-моему, это слишком нечестно, и противоречит тому что мы хоти сделать:
+Ну и я test and set spinlock написал по приколу, кажется тут с любым вариантом грустно будет.
+
+```C++
+struct mutex {
+    uint load;
+};
+
+void init(mutex* m) {
+    m->load = 0;
+}
+
+__kernel do_some_work() {
+    assert(get_group_id == [256, 1, 1]);
+    __local uint count[256];
+    __local disjoint_set = ...;
+    for (int iters = 0; iters < 100; ++iters) {
+        if (some_random_predicat(get_local_id(0))) {  // предикат срабатывает очень редко (например шанс - 0.1%)
+            count[get_local_id(0)]++;
+        } else {
+            tmp = get(disjoint_set, ...);  // потоки постоянно хотят читать из структурки
+        }
+    }
+    __local mutex m;
+    if (get_local_id(0) == 0) {
+        init(&m);
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (int iters = 0, size = count[get_local_id(0)]; iters < size; ++iters) {  // потоки делают сто итераций
+        while (true) {
+            if (atomic_load(&(m.load)) == 0 && atomic_cmpxchg(&(m.load), 0, 1)) {
+                union(disjoint_set, ...);  // на каждой итерации некоторые потоки могут захотеть обновить нашу структурку
+                atomic_store(&(m.load), 0);
+                break;
+            }
+        }
     }
 }
 ```
