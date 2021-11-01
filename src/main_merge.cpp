@@ -44,35 +44,39 @@ int main(int argc, char **argv) {
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
             cpu_sorted = as;
+            t.restart();
             std::sort(cpu_sorted.begin(), cpu_sorted.end());
             t.nextLap();
         }
         std::cout << "CPU: " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
-        std::cout << "CPU: " << (n / 1000 / 1000) / t.lapAvg() << " millions/s" << std::endl;
+        std::cout << "CPU: " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
     }
-    /*
-    gpu::gpu_mem_32f as_gpu;
-    as_gpu.resizeN(n);
+
+    gpu::gpu_mem_32f in_gpu;
+    gpu::gpu_mem_32f out_gpu;
+    in_gpu.resizeN(n);
+    out_gpu.resizeN(n);
     {
         ocl::Kernel merge(merge_kernel, merge_kernel_length, "merge");
         merge.compile();
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
-            as_gpu.writeN(as.data(), n);
-            t.restart();// Запускаем секундомер после прогрузки данных, чтобы замерять время работы кернела, а не трансфера данных
-            unsigned int workGroupSize = 128;
-            unsigned int global_work_size = (n + workGroupSize - 1) / workGroupSize * workGroupSize;
-            merge.exec(gpu::WorkSize(workGroupSize, global_work_size), as_gpu, n);
+            in_gpu.writeN(as.data(), n);
+            t.restart();// Запускаем секундомер после прогрузки данных, чтобы замерять время работы кернела, а не трансфер данных
+            for (int sorted = 1; sorted < n; sorted *= 2) {
+                merge.exec(gpu::WorkSize(256, n), in_gpu, out_gpu, sorted, n);
+                in_gpu.swap(out_gpu);
+            }
             t.nextLap();
         }
         std::cout << "GPU: " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
-        std::cout << "GPU: " << (n / 1000 / 1000) / t.lapAvg() << " millions/s" << std::endl;
-        as_gpu.readN(as.data(), n);
+        std::cout << "GPU: " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
+        in_gpu.readN(as.data(), n);
     }
     // Проверяем корректность результатов
     for (int i = 0; i < n; ++i) {
         EXPECT_THE_SAME(as[i], cpu_sorted[i], "GPU results should be equal to CPU results!");
     }
-*/
+
     return 0;
 }
