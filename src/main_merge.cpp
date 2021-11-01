@@ -59,11 +59,15 @@ int main(int argc, char **argv) {
     {
         ocl::Kernel merge(merge_kernel, merge_kernel_length, "merge");
         merge.compile();
+        ocl::Kernel merge_local(merge_kernel, merge_kernel_length, "merge_local");
+        merge_local.compile();
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
             in_gpu.writeN(as.data(), n);
             t.restart();// Запускаем секундомер после прогрузки данных, чтобы замерять время работы кернела, а не трансфер данных
-            for (int sorted = 1; sorted < n; sorted *= 2) {
+            merge_local.exec(gpu::WorkSize(256, n), in_gpu, out_gpu, n);
+            in_gpu.swap(out_gpu);
+            for (int sorted = 256; sorted < n; sorted *= 2) {
                 merge.exec(gpu::WorkSize(256, n), in_gpu, out_gpu, sorted, n);
                 in_gpu.swap(out_gpu);
             }
